@@ -2,6 +2,7 @@ import re
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 # Init env
 load_dotenv()
@@ -12,15 +13,16 @@ client = OpenAI()
 # Init article data
 title = "Ashwagandha vs Tongkat Ali: Unveiling the Power of Natural Supplements"
 meta = "Ashwagandha and Tongkat Ali are exceptional natural supplements that offer a myriad of health benefits. The choice between the two largely depends on individual health goals. Be it improving mental clarity with Ashwagandha, or enhancing bodily strength and endurance with Tongkat Ali, one is investing in health and wellness."
-category = "comparing-supplements"
-slug = "ashwagandha-vs-tongkat-ali-unveiling-the-power-of-natural-supplements"
+category = "Comparing Supplements"
+slug = "comparing-supplements/ashwagandha-vs-tongkat-ali-unveiling-the-power-of-natural-supplements"
 mini_slug = "AshwagandhaVsTongkatAli"
-author = "Ashley"
+author = "Ashley Olsen"
+date = datetime.now().strftime("%B %d, %Y")
 try_this_today = "Try this today: Here are more ideas to help you reduce stress: \nSpend some time in the great outdoors. \nTry to get enough sleep. \nMove your body by participating in enjoyable activities. \nSpend time with loved ones. \nSet boundaries to protect and prioritize your physical and mental health."
-image_name = "ashwagandha-vs-tongkat-ali.png"
+cover_image_name = "ashwagandha-vs-tongkat-ali.png"
 
 # Define the file path and name
-article_page_file = f'../joyroots-v1-homepage/pages/blog/{category}/{slug}.js'
+article_page_file = f'../joyroots-v1-homepage/pages/blog/{slug}.js'
 
 
 def parse_chatgpt_response(text):
@@ -114,7 +116,9 @@ def growth():
                 meta="{meta}",
                 author="{author}",
                 category="{category}",
+                date="{date}"
                 tryThisToday="{try_this_today}"
+                coverImageName="{cover_image_name}"
             />
         </div>
       );
