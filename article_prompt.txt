@@ -1,18 +1,13 @@
 [user_message]
 Write a 1000-word SEO-friendly article with title Ashwagandha vs Tongkat Ali: Unveiling the Power of Natural Supplements.
 
-Include primary keywords: [Ashwagandha], [Tongkat Ali] and secondary keywords: [natural supplements], [alternative medicine].
+Include primary keywords: {keyword_1}, {keyword_2} and secondary keywords: {keyword_3}, {keyword_4}.
 
 Go deep into the topic, and make it super informative.  Make sure to add facts and statistics. The tone should be informative and engaging.
 
 The structure should be like this (do switch up the actual names of the headings and subheadings):
-- introduction
-- detailed information about ashwagandha
-- detailed information about tongkat ali
-- detailed differences between ashwagandha and tongkat ali (4-5 points with subheadings each)
-- precautions and recommended dosage for both
-- 5-6 frequently asked questions and their answers (questions as subheadings)
-- conclusion
+
+{custom_instructions}
 
 Ensure the content is unique, offers valuable insights.  Ensure it adheres to SEO best practices. It should not feel like it was written by AI. Make up facts or points if you need to. 
 

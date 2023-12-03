@@ -1,10 +1,13 @@
 import re
 import os
+import requests
+import configparser
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
 from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
+from PIL import Image
 
 # Init env
 load_dotenv()
@@ -23,12 +26,19 @@ data = supabase.auth.sign_in_with_password({
     os.environ["SUPABASE_LOGIN_PASSWORD"]
 })
 
+# Load configuration
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Setup constants from config
+IMAGE_FOLDER_PATH = config['Paths']['ImageFolderPath']
+BLOG_PATH = config['Paths']['BlogPath']
+
 # Retrieve all articles to be written from Supabase Blog Queue table
 articles = supabase.table('Blog Queue').select("*").execute()
-
-
+'''
 def parse_chatgpt_response(text):
-    # Replace @@ with <h> tags for headings
+    # Replace @@ with <h1> tags for headings
     text = re.sub(r'@@(.*?)@@', r'<h1>\1</h1>', text)
 
     # Replace !! with <h2> tags for subheadings
@@ -45,30 +55,70 @@ def parse_chatgpt_response(text):
     formatted_text = formatted_text.replace('"', '&quot;')
 
     return formatted_text
+'''
 
 
-def read_messages():
-    with open('prompts.txt', 'r') as file:
-        lines = file.readlines()
+def escape_html_special_chars(text):
+    return (text.replace('&', '&amp;').replace('<', '&lt;').replace(
+        '>', '&gt;').replace('"', '&quot;'))
 
-    user_message = []
-    system_message = []
-    current_section = None
 
-    for line in lines:
-        if '[user_message]' in line:
-            current_section = 'user'
-            continue
-        elif '[system_message]' in line:
-            current_section = 'system'
-            continue
+def parse_chatgpt_response(text):
+    # Escape special HTML characters
+    text = escape_html_special_chars(text)
 
-        if current_section == 'user':
-            user_message.append(line.strip())
-        elif current_section == 'system':
-            system_message.append(line.strip())
+    # Replace @@ and !! with heading tags
+    text = re.sub(r'@@(.*?)@@', r'<h1>\1</h1>', text)
+    text = re.sub(r'!!(.*?)!!', r'<h2>\1</h2>', text)
 
-    return '\n'.join(user_message), '\n'.join(system_message)
+    # Split the text into sections based on headings and paragraphs
+    sections = re.split(r'(<h[12]>.*?</h[12]>)', text)
+
+    # Process each section
+    formatted_text = ''
+    for section in sections:
+        if section.startswith(('<h1>', '<h2>')):
+            # Add headings directly
+            formatted_text += section
+        else:
+            # Wrap non-heading sections in paragraph tags
+            paragraphs = section.split('\n')
+            for paragraph in paragraphs:
+                if paragraph.strip():
+                    formatted_text += f'<p>{paragraph.strip()}</p>'
+
+    return formatted_text
+
+
+def extract_image_prompt():
+    with open('image_prompt.txt', 'r') as file:
+        # Read the entire file content into a single string
+        return file.read().strip()
+
+
+def extract_article_prompts(keywords, custom_instructions):
+    with open('article_prompt.txt', 'r') as file:
+        content = file.read()
+
+        # Replace placeholders with actual values
+        for i, keyword in enumerate(keywords, start=1):
+            content = content.replace(f'{{keyword_{i}}}', keyword)
+        content = content.replace('{custom_instructions}', custom_instructions)
+
+        # Split content into user_message and system_message
+        sections = content.split('[system_message]')
+        user_message = sections[0]
+        system_message = sections[1].strip() if len(sections) > 1 else ''
+
+    return user_message, system_message
+
+
+def convert_to_hyphenated(string):
+    # Remove single and double quotes
+    string = string.replace("'", "").replace('"', "")
+
+    # Convert to lowercase and replace spaces with hyphens
+    return string.lower().replace(" ", "-")
 
 
 def parse_ttt_file(file_path):
@@ -80,7 +130,7 @@ def parse_ttt_file(file_path):
             line = line.strip()
             # Check for category line
             if line.startswith('[') and line.endswith(']'):
-                current_category = line[1:-1]  # Remove the square brackets
+                current_category = line[1:-1]
                 categories[current_category] = ""
             elif current_category:
                 categories[current_category] += line + "\n"
@@ -88,34 +138,66 @@ def parse_ttt_file(file_path):
     return categories
 
 
-def generate_image_name(category):
-    print("")
+def download_image(image_url, folder_path, file_name):
+    # Get the image content from the URL
+    response = requests.get(image_url)
+
+    if response.status_code == 200:
+        # Define the full path with folder and file name
+        file_path = f"{folder_path}/{file_name}"
+
+        # Write the image content to a file
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+
+        print(f"Image successfully saved to {file_path}")
+
+    else:
+        print("Failed to download the image")
+
+
+def compress_png(input_path, output_path, quality=65):
+    # Open the image
+    with Image.open(input_path) as img:
+        # Optimize and save the image with reduced quality
+        img.save(output_path, format='PNG', optimize=True, quality=quality)
 
 
 def growth():
     # Init
     ttt_content = parse_ttt_file('try_this_today.txt')
+    total_actions = 0
 
     for item in articles.data:
         # Retrieve article data
         title = item['title']
+        slug = item['slug']
+        keyword_1 = item['keyword_1']
+        keyword_2 = item['keyword_2']
+        keyword_3 = item['keyword_3']
+        keyword_4 = item['keyword_4']
+        custom_instructions = item['custom_instructions']
         meta = item['meta']
         category = item['category']
-        slug = item['slug']
+        image_prompt = item['image_prompt']
         page_var = item['page_var']
         author = item['author']
+
+        # Setup additional article data
+        keywords = [keyword_1, keyword_2, keyword_3, keyword_4]
         date = datetime.now().strftime("%B %d, %Y")
         try_this_today = ttt_content.get(category, "Error")
-        cover_image_name = f"{slug}-cover"
+        cover_image_name = f"{slug}-cover.png"
+        category_slug = convert_to_hyphenated(category)
 
         print(f"Next article to write: {title}")
 
-        # Define the file path and name
-        article_page_file = f'../joyroots-v1-homepage/pages/blog/{slug}.js'
+        # File path where article will be published and name of the .js file
+        article_page_file = f'{BLOG_PATH}/{category_slug}/{slug}.js'
 
         # Request GPT-4 to write the article
-        user_message, system_message = read_messages()
-        system_message = ""
+        user_message, system_message = extract_article_prompts(
+            keywords, custom_instructions)
         print("Requesting response from GPT-4...")
         response = client.chat.completions.create(model="gpt-4",
                                                   messages=[{
@@ -143,8 +225,29 @@ def growth():
         # Plain text
         plain_text = soup.get_text()
 
-        print("plain_text: ")
-        print(plain_text)
+        # Request DALL-3 to generate a cover image
+        print("Requesting response from DALL-E 3...")
+        additional_instructions = extract_image_prompt()
+        prompt = image_prompt + ', ' + additional_instructions
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1792x1024",
+            quality="hd",
+            n=1,
+        )
+        image_url = response.data[0].url
+
+        # Download and write image to the image folder defined in config.ini
+        download_image(image_url, IMAGE_FOLDER_PATH, cover_image_name)
+
+        # Compress image
+        compress_png(f'{IMAGE_FOLDER_PATH}/{cover_image_name}',
+                     f'{IMAGE_FOLDER_PATH}/{cover_image_name}')
+
+        print(
+            f"Image generated, compressed and saved to {IMAGE_FOLDER_PATH}/{cover_image_name}"
+        )
 
         # Generate the JavaScript code for the article page component
         print("Creating page... ")
@@ -160,11 +263,11 @@ def growth():
                     <meta name="description" content="{meta}" />
                 </Head>
                 <BlogPageTemplate
-                    content="{final_html}",
-                    title="{title}",
-                    meta="{meta}",
-                    author="{author}",
-                    category="{category}",
+                    content="{final_html}"
+                    title="{title}"
+                    meta="{meta}"
+                    author="{author}"
+                    category="{category}"
                     date="{date}"
                     tryThisToday="{try_this_today}"
                     coverImageName="{cover_image_name}"
@@ -206,10 +309,13 @@ def growth():
         print("Updated Published Articles table")
 
         # Delete row from Supabase Blog Queue table
-        delete_response = supabase.table('countries').delete().eq(
+        delete_response = supabase.table('Blog Queue').delete().eq(
             'title', title).execute()
+        total_actions += 1
+
         print("Deleted entry from Blog Queue table")
-        print(f"Article {title} completed")
+        print(f"Article {title} completed!")
+        print(f"Total actions this session: {total_actions}")
 
 
 def main():
