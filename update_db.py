@@ -1,5 +1,6 @@
-import json
 import os
+import json
+import configparser
 from supabase import create_client, Client as SupabaseClient
 from dotenv import load_dotenv
 
@@ -17,8 +18,15 @@ data = supabase.auth.sign_in_with_password({
     os.environ["SUPABASE_LOGIN_PASSWORD"]
 })
 
+# Load configuration
+config = configparser.ConfigParser()
+config.read('configuration/config.ini')
 
-def upload_articles_to_supabase(file_path='article_updates.json'):
+# Setup constants from config
+ARTICLE_UPDATES_PATH = config['Paths']['ArticleUpdatesPath']
+
+
+def upload_articles_to_supabase(file_path=ARTICLE_UPDATES_PATH):
     # Read the JSON file
     with open(file_path, 'r') as file:
         articles = json.load(file)

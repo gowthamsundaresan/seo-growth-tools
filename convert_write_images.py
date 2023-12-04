@@ -4,10 +4,11 @@ from PIL import Image
 
 # Load configuration
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('configuration/config.ini')
 
-# Retrive path to write the final image into
+# Setup constants from config
 IMAGE_FOLDER_PATH = config['Paths']['ImageFolderPath']
+IMAGE_OUTPUT_PATH = config['Paths']['ImageOutputPath']
 
 
 def convert_png_to_jpeg(input_path, output_path):
@@ -31,4 +32,4 @@ def process_images_in_folder(folder_path):
 
 
 # Example usage
-process_images_in_folder('images')
+process_images_in_folder(IMAGE_OUTPUT_PATH)

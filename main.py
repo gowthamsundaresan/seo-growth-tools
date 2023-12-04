@@ -1,5 +1,5 @@
-import re
 import os
+import re
 import requests
 import configparser
 import time
@@ -32,11 +32,16 @@ data = supabase.auth.sign_in_with_password({
 
 # Load configuration
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('configuration/config.ini')
 
 # Setup constants from config
 IMAGE_FOLDER_PATH = config['Paths']['ImageFolderPath']
 BLOG_PATH = config['Paths']['BlogPath']
+IMAGE_PROMPT_PATH = config['Paths']['ImagePromptPath']
+ARTICLE_PROMPT_PATH = config['Paths']['ArticlePromptPath']
+ARTICLE_UPDATES_PATH = config['Paths']['ArticleUpdatesPath']
+TTT_PATH = config['Paths']['TryThisTodayPath']
+IMAGES_TO_GENERATE_PATH = config['Paths']['ImagesToGeneratePath']
 
 # Retrieve all articles to be written from Supabase Blog Queue table
 articles = supabase.from_('Blog Queue').select('*').eq('is_published',
@@ -76,13 +81,13 @@ def parse_chatgpt_response(text):
 
 
 def extract_image_prompt():
-    with open('image_prompt.txt', 'r') as file:
+    with open(IMAGE_PROMPT_PATH, 'r') as file:
         # Read the entire file content into a single string
         return file.read().strip()
 
 
 def extract_article_prompts(title, keywords, custom_instructions):
-    with open('article_prompt.txt', 'r') as file:
+    with open(ARTICLE_PROMPT_PATH, 'r') as file:
         content = file.read()
 
         # Replace placeholders with actual values
@@ -167,7 +172,7 @@ def get_date():
     return formatted_random_date
 
 
-def append_to_json_file(article, file_path='article_updates.json'):
+def append_to_json_file(article, file_path=ARTICLE_UPDATES_PATH):
     try:
         # Read the existing data
         with open(file_path, 'r') as file:
@@ -184,9 +189,7 @@ def append_to_json_file(article, file_path='article_updates.json'):
         json.dump(data, file, indent=4)
 
 
-def append_to_text_file(image_name,
-                        prompt,
-                        file_path='images_to_generate.txt'):
+def append_to_text_file(image_name, prompt, file_path=IMAGES_TO_GENERATE_PATH):
     with open(file_path, 'a') as file:
         file.write(f"Image Name: {image_name}\n")
         file.write("Prompt:\n")
@@ -196,7 +199,7 @@ def append_to_text_file(image_name,
 
 def growth():
     # Init
-    ttt_content = parse_ttt_file('try_this_today.txt')
+    ttt_content = parse_ttt_file(TTT_PATH)
     total_actions = 0
 
     for item in articles.data:
