@@ -42,6 +42,7 @@ ARTICLE_PROMPT_PATH = config['Paths']['ArticlePromptPath']
 ARTICLE_UPDATES_PATH = config['Paths']['ArticleUpdatesPath']
 TTT_PATH = config['Paths']['TryThisTodayPath']
 IMAGES_TO_GENERATE_PATH = config['Paths']['ImagesToGeneratePath']
+AUTO_IMAGE_GEN = config['AutoImageGen']['AutoImageGen']
 
 # Retrieve all articles to be written from Supabase Blog Queue table
 articles = supabase.from_('Blog Queue').select('*').eq('is_published',
@@ -261,39 +262,43 @@ def growth():
         # Plain text
         plain_text = soup.get_text()
 
-        # Request DALL-3 to generate a cover image (a bit more expensive)
-        '''
-        print("Requesting response from DALL-E 3...")
-        additional_instructions = extract_image_prompt()
-        prompt = image_prompt + ', ' + additional_instructions
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1792x1024",
-            quality="standard",
-            n=1,
-        )
-        image_url = response.data[0].url
+        if AUTO_IMAGE_GEN == "true":
+            # Request DALL-3 to generate a cover image (a bit more expensive)
+            print("Requesting response from DALL-E 3...")
+            additional_instructions = extract_image_prompt()
+            prompt = image_prompt + ', ' + additional_instructions
+            response = client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1792x1024",
+                quality="standard",
+                n=1,
+            )
+            image_url = response.data[0].url
 
-        # Download and write image to the image folder defined in config.ini
-        download_image(image_url, IMAGE_FOLDER_PATH, f'{cover_image_name}.png')
+            # Download and write image to the image folder defined in config.ini
+            download_image(image_url, IMAGE_FOLDER_PATH,
+                           f'{cover_image_name}.png')
 
-        # Convert and compress image
-        convert_png_to_jpeg(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png',
-                            f'{IMAGE_FOLDER_PATH}/{cover_image_name}.jpg')
+            # Convert and compress image
+            convert_png_to_jpeg(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png',
+                                f'{IMAGE_FOLDER_PATH}/{cover_image_name}.jpg')
 
-        # Delete original .png image
-        os.remove(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png')
+            # Delete original .png image
+            os.remove(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png')
 
-        print(
-            f"Image generated, compressed and saved to {IMAGE_FOLDER_PATH}/{cover_image_name}"
-        )
-        '''
+            print(
+                f"Image generated, compressed and saved to {IMAGE_FOLDER_PATH}/{cover_image_name}"
+            )
 
-        # Alternately, write prompts manually to images_to_generate.txt and generate them on your own. This is less expensive if you have ChatGPT pro. Also useful if you want to use another image generating model manually.
-        additional_instructions = extract_image_prompt()
-        prompt = image_prompt + ', ' + additional_instructions + ',  size=1792x1024'
-        append_to_text_file(cover_image_name, prompt)
+        else:
+            # Alternately, write prompts manually to images_to_generate.txt and generate them on your own. This is less expensive if you have ChatGPT pro. Also useful if you want to use another image generating model manually.
+            additional_instructions = extract_image_prompt()
+            prompt = image_prompt + ', ' + additional_instructions + ',  size=1792x1024'
+            append_to_text_file(cover_image_name, prompt)
+            print(
+                "Image prompt written to text file. Manually generate and place article cover images."
+            )
 
         # Generate the JavaScript code for the article page component
         print("Creating page... ")
@@ -364,7 +369,7 @@ def growth():
 
 def main():
     """
-    Main function. Performs the login and then executes the strategy.
+    Main function. Executes the strategy.
 
     Returns:
     --------

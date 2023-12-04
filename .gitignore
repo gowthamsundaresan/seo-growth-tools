@@ -1,5 +1,4 @@
 .env
 config.ini
 /images
-/configuration
-/manual
+/manual/*

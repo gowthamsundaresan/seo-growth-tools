@@ -1,0 +1,5 @@
+openai
+pillow
+python-dotenv
+supabase
+bs4
