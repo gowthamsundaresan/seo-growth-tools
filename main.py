@@ -3,12 +3,14 @@ import os
 import requests
 import configparser
 import time
+import random
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
 from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
 from PIL import Image
+from datetime import datetime, timedelta
 
 # Init env
 load_dotenv()
@@ -145,6 +147,25 @@ def convert_png_to_jpeg(input_path, output_path):
         img.save(output_path, format='JPEG', quality=85)
 
 
+def get_date():
+    # Define the start date and the current date
+    start_date = datetime(2023, 10, 1)
+    current_date = datetime.now()
+
+    # Calculate the difference in days between the start date and current date
+    delta_days = (current_date - start_date).days
+
+    # Generate a random number of days to add to the start date
+    random_days = random.randint(0, delta_days)
+
+    # Calculate the random date
+    random_date = start_date + timedelta(days=random_days)
+
+    # Format the random date
+    formatted_random_date = random_date.strftime("%B %d, %Y")
+    return formatted_random_date
+
+
 def growth():
     # Init
     ttt_content = parse_ttt_file('try_this_today.txt')
@@ -168,7 +189,7 @@ def growth():
 
         # Setup additional article data
         keywords = [keyword_1, keyword_2, keyword_3, keyword_4]
-        date = datetime.now().strftime("%B %d, %Y")
+        date = get_date()
         try_this_today = ttt_content.get(category, "Error")
         cover_image_name = f"{slug}-cover"
         category_slug = convert_to_hyphenated(category)
@@ -278,12 +299,16 @@ def growth():
             title,
             "slug":
             slug,
+            "category_slug":
+            category_slug,
+            "live_link":
+            f"https://getjoyroots.com/blog/{category_slug}/{slug}",
             "meta":
             meta,
             "category":
             category,
             "cover_image_name":
-            cover_image_name,
+            f"{cover_image_name}.jpg",
             "author":
             author,
             "date":
@@ -305,8 +330,8 @@ def growth():
         print("Updated is_published in Blog Queue table")
         print(f"Article {title} completed!")
         print(f"Total actions this session: {total_actions}")
-        print("Sleeping 60s...")
-        time.sleep(60)
+        print("Sleeping 3s...")
+        time.sleep(3)
 
 
 def main():

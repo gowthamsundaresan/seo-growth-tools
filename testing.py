@@ -1,30 +1,30 @@
 from PIL import Image
+from datetime import datetime, timedelta
+import random
 
 
-def convert_png_to_jpeg(input_path, output_path):
-    with Image.open(input_path) as img:
-        img = img.convert("RGB")
-        img.save(output_path, format='JPEG', quality=85)
+def get_date():
+    # Define the start date and the current date
+    start_date = datetime(2023, 10, 1)
+    current_date = datetime.now()
 
+    # Calculate the difference in days between the start date and current date
+    delta_days = (current_date - start_date).days
 
-def convert_to_hyphenated(string):
-    # Remove single and double quotes
-    string = string.replace("'", "").replace('"', "")
+    # Generate a random number of days to add to the start date
+    random_days = random.randint(0, delta_days)
 
-    # Convert to lowercase and replace spaces with hyphens
-    return string.lower().replace(" ", "-")
+    # Calculate the random date
+    random_date = start_date + timedelta(days=random_days)
+
+    # Format the random date
+    formatted_random_date = random_date.strftime("%B %d, %Y")
+    return formatted_random_date
 
 
 def main():
-    """
-    Main function. Performs the login and then executes the strategy.
-
-    Returns:
-    --------
-        None.
-    """
-    string = convert_to_hyphenated("Women's Health")
-    print(string)
+    date = get_date()
+    print(date)
 
 
 if __name__ == "__main__":
