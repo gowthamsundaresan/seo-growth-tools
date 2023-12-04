@@ -88,7 +88,7 @@ python main.py
 
 ### Choosing Manual vs. Auto Image Generation Mode
 
-- **Auto Generation Mode**: Set `AutoImageGen` to `true` in `config.ini` for automated image creation.
+- **Auto Generation Mode**: Set `AutoImageGen` to `true` in `config.ini` for automated image creation. Uses DALL-E-3 which can get expensive.
 - **Manual Generation Mode**: Set `AutoImageGen` to `false`. The `manual` folder will get populated with `article_updates.json` and `images_to_generate.txt`. Manually generate the images, then use `convert_write_images.py` for processing.
 
 ## Contributing
