@@ -4,6 +4,7 @@ import requests
 import configparser
 import time
 import random
+import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
@@ -166,6 +167,33 @@ def get_date():
     return formatted_random_date
 
 
+def append_to_json_file(article, file_path='article_updates.json'):
+    try:
+        # Read the existing data
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # If the file doesn't exist or is empty, start with an empty list
+        data = []
+
+    # Append the new article
+    data.append(article)
+
+    # Write back to the file
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
+
+
+def append_to_text_file(image_name,
+                        prompt,
+                        file_path='images_to_generate.txt'):
+    with open(file_path, 'a') as file:
+        file.write(f"Image Name: {image_name}\n")
+        file.write("Prompt:\n")
+        file.write(f"{prompt}\n\n\n")
+        file.write("<#######>\n\n\n")
+
+
 def growth():
     # Init
     ttt_content = parse_ttt_file('try_this_today.txt')
@@ -230,7 +258,8 @@ def growth():
         # Plain text
         plain_text = soup.get_text()
 
-        # Request DALL-3 to generate a cover image
+        # Request DALL-3 to generate a cover image (a bit more expensive)
+        '''
         print("Requesting response from DALL-E 3...")
         additional_instructions = extract_image_prompt()
         prompt = image_prompt + ', ' + additional_instructions
@@ -256,6 +285,12 @@ def growth():
         print(
             f"Image generated, compressed and saved to {IMAGE_FOLDER_PATH}/{cover_image_name}"
         )
+        '''
+
+        # Alternately, write prompts manually to images_to_generate.txt and generate them on your own. This is less expensive if you have ChatGPT pro. Also useful if you want to use another image generating model manually.
+        additional_instructions = extract_image_prompt()
+        prompt = image_prompt + ', ' + additional_instructions + ',  size=1792x1024'
+        append_to_text_file(cover_image_name, prompt)
 
         # Generate the JavaScript code for the article page component
         print("Creating page... ")
@@ -293,32 +328,22 @@ def growth():
 
         print("New article page created: ", article_page_file)
 
-        # Update to supabase Published Articles table
-        result = supabase.table('Published Articles').insert({
-            "title":
-            title,
-            "slug":
-            slug,
-            "category_slug":
-            category_slug,
+        # Write updates to article_updates.json. Use the update_db.py script to batch update the DB after publishing all your articles generated this session live onto your website
+        article_update_data = {
+            "title": title,
+            "slug": slug,
+            "category_slug": category_slug,
             "live_link":
             f"https://getjoyroots.com/blog/{category_slug}/{slug}",
-            "meta":
-            meta,
-            "category":
-            category,
-            "cover_image_name":
-            f"{cover_image_name}.jpg",
-            "author":
-            author,
-            "date":
-            date,
-            "article_html":
-            final_html,
-            "article_plain_text":
-            plain_text
-        }).execute()
-        print("Updated Published Articles table")
+            "meta": meta,
+            "category": category,
+            "cover_image_name": f"{cover_image_name}.jpg",
+            "author": author,
+            "date": date,
+            "article_html": final_html,
+            "article_plain_text": plain_text
+        }
+        append_to_json_file(article_update_data)
 
         # Update is_published to True
         update_table = supabase.table('Blog Queue').update({

@@ -1,2 +1,4 @@
-# env files
 .env
+config.ini
+/images
+
