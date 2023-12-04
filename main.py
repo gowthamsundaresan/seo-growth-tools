@@ -368,14 +368,7 @@ def growth():
 
 
 def main():
-    """
-    Main function. Executes the strategy.
-
-    Returns:
-    --------
-        None.
-    """
-    # Begin strategy
+    # Lessgoo
     growth()
 
 
