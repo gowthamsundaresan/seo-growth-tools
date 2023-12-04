@@ -4,13 +4,15 @@
 
 This project automates the process of creating, formatting, and publishing articles to a blog. It integrates OpenAI's GPT-4 for content generation, Supabase for data management, and DALL-E 3 for image creation, offering both automated and manual modes for image processing.
 
+This workflow assumes that you don't use a CMS and automates the entire process for a blog built directly on a Next.js. In case you use a CMS, change up the way the article data and generated images are sent for publishing.
+
 ## Features
 
 - **Content Generation**: Utilizes OpenAI's GPT-4 for article generation.
 - **Image Creation**: Uses DALL-E 3 for automated image generation, with support for manual mode.
 - **Data Management**: Employs Supabase for handling blog queue data and tracking published articles.
-- **HTML Formatting**: Converts raw text into HTML for web publishing.
-- **Image Processing**: Includes functionality for downloading, converting, and managing images.
+- **HTML Formatting**: Converts raw text into HTML to automatically create a .js page for web publishing.
+- **Image Processing**: Includes functionality for downloading, converting, compressing and managing images.
 
 ## Prerequisites
 
@@ -24,7 +26,7 @@ This project automates the process of creating, formatting, and publishing artic
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/gowthamsundaresan/seo-growth-tools]
+   git clone https://github.com/gowthamsundaresan/seo-growth-tools
    ```
 2. Install the required Python packages:
    ```bash
@@ -84,6 +86,12 @@ Run the script using Python:
 
 ```bash
 python main.py
+```
+
+Once you've published your site and your articles are live, update Supabase with the published articles:
+
+```bash
+python update_db.py
 ```
 
 ### Choosing Manual vs. Auto Image Generation Mode
