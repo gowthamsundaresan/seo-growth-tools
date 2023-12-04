@@ -1,5 +1,5 @@
 [user_message]
-Write a 1000-word SEO-friendly article with title Ashwagandha vs Tongkat Ali: Unveiling the Power of Natural Supplements.
+Write a 1000-word SEO-friendly article with title {title}.
 
 Include primary keywords: {keyword_1}, {keyword_2} and secondary keywords: {keyword_3}, {keyword_4}.
 

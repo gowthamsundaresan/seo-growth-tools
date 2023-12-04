@@ -2,6 +2,7 @@ import re
 import os
 import requests
 import configparser
+import time
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
@@ -35,27 +36,8 @@ IMAGE_FOLDER_PATH = config['Paths']['ImageFolderPath']
 BLOG_PATH = config['Paths']['BlogPath']
 
 # Retrieve all articles to be written from Supabase Blog Queue table
-articles = supabase.table('Blog Queue').select("*").execute()
-'''
-def parse_chatgpt_response(text):
-    # Replace @@ with <h1> tags for headings
-    text = re.sub(r'@@(.*?)@@', r'<h1>\1</h1>', text)
-
-    # Replace !! with <h2> tags for subheadings
-    text = re.sub(r'!!(.*?)!!', r'<h2>\1</h2>', text)
-
-    # Split the text into paragraphs based on blank lines
-    paragraphs = re.split(r'\n\s*\n', text)
-
-    # Wrap each paragraph with <p> tags, trimming whitespace
-    formatted_text = ''.join(f'<p>{paragraph.strip()}</p>'
-                             for paragraph in paragraphs if paragraph.strip())
-
-    # replace " with &quot;
-    formatted_text = formatted_text.replace('"', '&quot;')
-
-    return formatted_text
-'''
+articles = supabase.from_('Blog Queue').select('*').eq('is_published',
+                                                       False).execute()
 
 
 def escape_html_special_chars(text):
@@ -96,7 +78,7 @@ def extract_image_prompt():
         return file.read().strip()
 
 
-def extract_article_prompts(keywords, custom_instructions):
+def extract_article_prompts(title, keywords, custom_instructions):
     with open('article_prompt.txt', 'r') as file:
         content = file.read()
 
@@ -104,6 +86,7 @@ def extract_article_prompts(keywords, custom_instructions):
         for i, keyword in enumerate(keywords, start=1):
             content = content.replace(f'{{keyword_{i}}}', keyword)
         content = content.replace('{custom_instructions}', custom_instructions)
+        content = content.replace('{title}', title)
 
         # Split content into user_message and system_message
         sections = content.split('[system_message]')
@@ -156,11 +139,10 @@ def download_image(image_url, folder_path, file_name):
         print("Failed to download the image")
 
 
-def compress_png(input_path, output_path, quality=65):
-    # Open the image
+def convert_png_to_jpeg(input_path, output_path):
     with Image.open(input_path) as img:
-        # Optimize and save the image with reduced quality
-        img.save(output_path, format='PNG', optimize=True, quality=quality)
+        img = img.convert("RGB")
+        img.save(output_path, format='JPEG', quality=85)
 
 
 def growth():
@@ -170,6 +152,7 @@ def growth():
 
     for item in articles.data:
         # Retrieve article data
+        id = item['id']
         title = item['title']
         slug = item['slug']
         keyword_1 = item['keyword_1']
@@ -187,7 +170,7 @@ def growth():
         keywords = [keyword_1, keyword_2, keyword_3, keyword_4]
         date = datetime.now().strftime("%B %d, %Y")
         try_this_today = ttt_content.get(category, "Error")
-        cover_image_name = f"{slug}-cover.png"
+        cover_image_name = f"{slug}-cover"
         category_slug = convert_to_hyphenated(category)
 
         print(f"Next article to write: {title}")
@@ -197,7 +180,8 @@ def growth():
 
         # Request GPT-4 to write the article
         user_message, system_message = extract_article_prompts(
-            keywords, custom_instructions)
+            title, keywords, custom_instructions)
+
         print("Requesting response from GPT-4...")
         response = client.chat.completions.create(model="gpt-4",
                                                   messages=[{
@@ -233,17 +217,20 @@ def growth():
             model="dall-e-3",
             prompt=prompt,
             size="1792x1024",
-            quality="hd",
+            quality="standard",
             n=1,
         )
         image_url = response.data[0].url
 
         # Download and write image to the image folder defined in config.ini
-        download_image(image_url, IMAGE_FOLDER_PATH, cover_image_name)
+        download_image(image_url, IMAGE_FOLDER_PATH, f'{cover_image_name}.png')
 
-        # Compress image
-        compress_png(f'{IMAGE_FOLDER_PATH}/{cover_image_name}',
-                     f'{IMAGE_FOLDER_PATH}/{cover_image_name}')
+        # Convert and compress image
+        convert_png_to_jpeg(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png',
+                            f'{IMAGE_FOLDER_PATH}/{cover_image_name}.jpg')
+
+        # Delete original .png image
+        os.remove(f'{IMAGE_FOLDER_PATH}/{cover_image_name}.png')
 
         print(
             f"Image generated, compressed and saved to {IMAGE_FOLDER_PATH}/{cover_image_name}"
@@ -270,7 +257,7 @@ def growth():
                     category="{category}"
                     date="{date}"
                     tryThisToday="{try_this_today}"
-                    coverImageName="{cover_image_name}"
+                    coverImageName="{cover_image_name}.jpg"
                 />
             </div>
         );
@@ -308,14 +295,18 @@ def growth():
         }).execute()
         print("Updated Published Articles table")
 
-        # Delete row from Supabase Blog Queue table
-        delete_response = supabase.table('Blog Queue').delete().eq(
-            'title', title).execute()
+        # Update is_published to True
+        update_table = supabase.table('Blog Queue').update({
+            'is_published': True
+        }).eq('id', id).execute()
+
         total_actions += 1
 
-        print("Deleted entry from Blog Queue table")
+        print("Updated is_published in Blog Queue table")
         print(f"Article {title} completed!")
         print(f"Total actions this session: {total_actions}")
+        print("Sleeping 60s...")
+        time.sleep(60)
 
 
 def main():
