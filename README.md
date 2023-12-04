@@ -75,7 +75,7 @@ The configuration folder contains essential files for customizing the article ge
 
 ## Setup
 
-1. Set up a `.env` file with Supabase credentials and other necessary configurations.
+1. Set up a `.env` file with Supabase credentials and your OpenAI API key.
 2. Modify `config.ini` in the `configuration` directory for paths and automation settings.
 
 ## Usage
