@@ -29,6 +29,9 @@ def process_images_in_folder(folder_path):
 
             # Delete the original PNG image
             os.remove(input_path)
+            print(
+                f"{filename}.png converted, written to blog and deleted from /images"
+            )
 
 
 # Example usage

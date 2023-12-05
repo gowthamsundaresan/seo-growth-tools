@@ -90,7 +90,7 @@ Run the script using Python:
 python main.py
 ```
 
-Once you've published your site and your articles are live, update Supabase with the published articles:
+The `manual/article_updates.json` file gets updated with every article that's created. Once you've published your site and your articles are live, update Supabase with the data of these published articles:
 
 ```bash
 python update_db.py
@@ -99,7 +99,11 @@ python update_db.py
 ### Choosing Manual vs. Auto Image Generation Mode
 
 - **Auto Generation Mode**: Set `AutoImageGen` to `true` in `config.ini` for automated image creation. Uses DALL-E-3 which can get expensive.
-- **Manual Generation Mode**: Set `AutoImageGen` to `false`. The `manual` folder will get populated with `article_updates.json` and `images_to_generate.txt`. Manually generate the images, then use `convert_write_images.py` for processing.
+- **Manual Generation Mode**: Set `AutoImageGen` to `false` if you want to manually generate/add your own images. With this setting, `images_to_generate.txt` gets populated with the prompts and filenames for each cover image that you need to create. Manually generate the images, rename them and place the .png files in `images`, then use `convert_write_images.py` to convert them to .jpg and write place them in your website's public images folder.
+
+```bash
+python convert_write_images.py
+```
 
 ## Contributing
 
