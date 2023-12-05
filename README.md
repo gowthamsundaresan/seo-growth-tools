@@ -4,6 +4,8 @@
 
 This project automates the process of creating, formatting, and publishing articles to a blog. It integrates OpenAI's GPT-4 for content generation, Supabase for data management, and DALL-E 3 for image creation, offering both automated and manual modes for image processing.
 
+Use ChatGPT to populate the Blog Queue Table for SEO-focussed titles, custom instructions, 4 target keywords, meta description, prompt for the cover images, etc. and then use the script to automatically generate and publish all article one by one. It takes about 45 seconds to generate and entire article.
+
 This workflow assumes that you don't use a CMS and automates the entire process for a blog built directly on a Next.js. In case you use a CMS, change up the way the article data and generated images are sent for publishing.
 
 ## Features
